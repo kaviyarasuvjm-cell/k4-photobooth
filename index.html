@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#111827"><meta name="description" content="K4 AI PhotoBooth Studio">
+<link rel="manifest" href="manifest.json"><link rel="stylesheet" href="styles.css">
+<title>K4 AI PhotoBooth Studio</title>
+</head>
+<body>
+<header class="topbar"><div class="brand"><div class="logo">K4</div><div><b>K4 AI PhotoBooth Studio</b><small>Event photography workspace</small></div></div><span id="onlineState" class="pill">Checking…</span></header>
+<main>
+<section class="hero"><div><p class="eyebrow">LOCAL-FIRST PHOTO BOOTH</p><h1>Make every event memorable.</h1><p>Capture, organize, preview and print guest photos from one simple workspace.</p></div><button id="installBtn" class="secondary hidden">Install app</button></section>
+<nav class="tabs"><button class="tab active" data-tab="studio">Studio</button><button class="tab" data-tab="gallery">Gallery</button><button class="tab" data-tab="events">Events</button><button class="tab" data-tab="settings">Settings</button></nav>
+<section id="studio" class="panel active">
+<div class="grid two">
+<article class="card camera-card"><div class="section-head"><div><p class="eyebrow">01 / CAPTURE</p><h2>Photo studio</h2></div><span class="pill muted" id="cameraStatus">Camera off</span></div>
+<div class="video-wrap"><video id="video" autoplay playsinline muted></video><div id="videoPlaceholder" class="placeholder"><span>📷</span><b>Camera preview</b><small>Allow camera access to begin</small></div></div>
+<div class="controls"><button id="startCamera" class="primary">Start camera</button><button id="captureBtn" disabled>Capture photo</button><button id="stopCamera" class="secondary" disabled>Stop</button></div>
+<div class="field"><label for="eventSelect">Save to event</label><select id="eventSelect"></select></div>
+<div class="field"><label for="guestName">Guest name (optional)</label><input id="guestName" placeholder="e.g. Guest 001"></div>
+<div class="controls"><button id="uploadBtn" class="secondary">Choose photo from device</button><input id="fileInput" type="file" accept="image/*" hidden></div>
+</article>
+<article class="card"><p class="eyebrow">02 / PREVIEW</p><h2>Latest photo</h2><div class="preview-wrap"><img id="latestPhoto" alt="Latest captured photo" hidden><div id="previewEmpty" class="placeholder"><span>✨</span><b>Your photo appears here</b><small>Capture or upload an image</small></div></div>
+<div class="controls"><button id="savePhoto" class="primary" disabled>Save to gallery</button><button id="printPhoto" disabled>Print</button></div>
+<div class="notice"><b>AI Studio – coming in V2</b><p>AI portrait generation, themed transformations and background replacement will be added as a real AI processing module. This V1 does not label ordinary filters as AI.</p></div>
+</article></div>
+</section>
+<section id="gallery" class="panel"><div class="section-head"><div><p class="eyebrow">03 / COLLECTION</p><h2>Photo gallery</h2><p class="sub">Photos are stored in this browser on this device.</p></div><button id="exportBtn" class="secondary">Export records</button></div><div id="galleryGrid" class="gallery-grid"></div><p id="galleryEmpty" class="empty">No saved photos yet. Capture your first event photo.</p></section>
+<section id="events" class="panel"><div class="section-head"><div><p class="eyebrow">04 / MANAGEMENT</p><h2>Events</h2></div></div><article class="card"><form id="eventForm" class="event-form"><div class="field"><label>Event name</label><input id="eventName" required placeholder="Wedding – Kumar & Priya"></div><div class="field"><label>Event date</label><input id="eventDate" type="date" required></div><button class="primary" type="submit">Create event</button></form></article><div id="eventList" class="event-list"></div></section>
+<section id="settings" class="panel"><article class="card"><p class="eyebrow">05 / WORKSPACE</p><h2>Settings & device</h2><div class="settings-row"><span>Storage mode</span><b>Local browser storage</b></div><div class="settings-row"><span>Network status</span><b id="networkText">Checking…</b></div><div class="settings-row"><span>App version</span><b>V1.0.0</b></div><div class="notice"><b>Privacy note</b><p>Photos remain in this browser's local storage unless you export or share them. Clearing browser data may remove saved photos. Export regularly.</p></div><button id="clearData" class="danger">Delete all local photos and events</button></article></section>
+</main><footer>K4 AI PhotoBooth Studio · V1.0.0 · Local-first prototype</footer>
+<div id="toast" role="status" class="toast"></div>
+<script src="app.js"></script>
+</body></html>

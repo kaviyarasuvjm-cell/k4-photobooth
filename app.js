@@ -1,0 +1,35 @@
+const $=id=>document.getElementById(id);
+const DBKEY='k4_photobooth_v1';
+let state=loadState(),stream=null,pendingBlob=null,deferredPrompt=null;
+function loadState(){try{return JSON.parse(localStorage.getItem(DBKEY))||{events:[],photos:[]}}catch{return{events:[],photos:[]}}}
+function persist(){try{localStorage.setItem(DBKEY,JSON.stringify(state));return true}catch(e){toast('Storage full. Export photos and remove older items.');return false}}
+function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600)}
+function id(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
+function render(){renderEvents();renderGallery();updateNetwork()}
+function renderEvents(){const opts=state.events.map(e=>`<option value="${e.id}">${esc(e.name)}</option>`).join('');$('eventSelect').innerHTML='<option value="">General / no event</option>'+opts;$('eventList').innerHTML=state.events.map(e=>{let count=state.photos.filter(p=>p.eventId===e.id).length;return `<div class="event-item"><div><b>${esc(e.name)}</b><small>${esc(e.date)} · ${count} photos</small></div><button class="secondary" data-delete-event="${e.id}">Delete</button></div>`}).join('')||'<p class="empty">No events created yet.</p>'}
+function renderGallery(){const grid=$('galleryGrid');grid.innerHTML=state.photos.slice().reverse().map(p=>`<div class="photo-card"><img src="${p.data}" alt="Event photo"><div class="photo-meta"><b>${esc(p.guest||'Guest photo')}</b><small>${esc(eventName(p.eventId))} · ${new Date(p.created).toLocaleString()}</small></div><div class="photo-actions"><button data-print="${p.id}">Print</button><button data-download="${p.id}">Download</button><button data-delete-photo="${p.id}">Delete</button></div></div>`).join('');$('galleryEmpty').classList.toggle('hidden',state.photos.length>0)}
+function eventName(eid){return state.events.find(e=>e.id===eid)?.name||'General'}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function updateNetwork(){let online=navigator.onLine;$('onlineState').textContent=online?'Online':'Offline';$('networkText').textContent=online?'Connected':'Offline mode available'}
+async function startCamera(){try{if(!navigator.mediaDevices?.getUserMedia)throw Error('Camera requires HTTPS or localhost and a supported browser.');stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:false});$('video').srcObject=stream;$('videoPlaceholder').classList.add('hidden');$('cameraStatus').textContent='Camera ready';$('captureBtn').disabled=false;$('stopCamera').disabled=false;toast('Camera ready')}catch(e){toast(e.message||'Unable to access camera. Check permission.')}}
+function stopCamera(){if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;$('video').srcObject=null;$('videoPlaceholder').classList.remove('hidden');$('cameraStatus').textContent='Camera off';$('captureBtn').disabled=true;$('stopCamera').disabled=true}
+function showPreview(blob){pendingBlob=blob;let url=URL.createObjectURL(blob);$('latestPhoto').src=url;$('latestPhoto').hidden=false;$('previewEmpty').classList.add('hidden');$('savePhoto').disabled=false;$('printPhoto').disabled=false}
+function capture(){let v=$('video');if(!v.videoWidth){toast('Wait for camera preview');return}let c=document.createElement('canvas');c.width=v.videoWidth;c.height=v.videoHeight;c.getContext('2d').drawImage(v,0,0);c.toBlob(b=>showPreview(b),'image/jpeg',.92)}
+function savePending(){if(!pendingBlob)return;const reader=new FileReader();reader.onload=()=>{let photo={id:id(),data:reader.result,guest:$('guestName').value.trim(),eventId:$('eventSelect').value,created:new Date().toISOString()};state.photos.push(photo);if(persist()){render();toast('Photo saved to gallery');$('guestName').value=''}};reader.readAsDataURL(pendingBlob)}
+function printData(data){let w=window.open('','_blank');if(!w){toast('Allow pop-ups to print');return}w.document.write(`<html><head><title>K4 Photo</title><style>body{margin:0;display:grid;place-items:center;min-height:100vh}img{max-width:100%;max-height:95vh;object-fit:contain}@media print{img{width:100%}}</style></head><body><img src="${data}" onload="setTimeout(()=>window.print(),300)"></body></html>`);w.document.close()}
+function download(p){let a=document.createElement('a');a.href=p.data;a.download=`K4-${p.guest||'Photo'}-${p.id}.jpg`;a.click()}
+$('startCamera').onclick=startCamera;$('stopCamera').onclick=stopCamera;$('captureBtn').onclick=capture;$('savePhoto').onclick=savePending;$('printPhoto').onclick=()=>pendingBlob&&printData(URL.createObjectURL(pendingBlob));
+$('uploadBtn').onclick=()=>$('fileInput').click();$('fileInput').onchange=e=>{let f=e.target.files[0];if(f){if(!f.type.startsWith('image/'))return toast('Choose an image file');showPreview(f)}};
+$('eventForm').onsubmit=e=>{e.preventDefault();state.events.push({id:id(),name:$('eventName').value.trim(),date:$('eventDate').value});persist();$('eventName').value='';render();toast('Event created')};
+document.addEventListener('click',e=>{let t=e.target;if(t.dataset.tab){document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x===t));document.querySelectorAll('.panel').forEach(x=>x.classList.toggle('active',x.id===t.dataset.tab))}
+if(t.dataset.deleteEvent){if(confirm('Delete this event? Photos will remain in the gallery.')){state.events=state.events.filter(x=>x.id!==t.dataset.deleteEvent);state.photos.forEach(p=>{if(p.eventId===t.dataset.deleteEvent)p.eventId=''});persist();render()}}
+if(t.dataset.deletePhoto){state.photos=state.photos.filter(p=>p.id!==t.dataset.deletePhoto);persist();render();toast('Photo deleted')}
+if(t.dataset.print){let p=state.photos.find(x=>x.id===t.dataset.print);if(p)printData(p.data)}
+if(t.dataset.download){let p=state.photos.find(x=>x.id===t.dataset.download);if(p)download(p)}});
+$('exportBtn').onclick=()=>{let blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});let a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='K4-PhotoBooth-Backup.json';a.click();URL.revokeObjectURL(a.href)};
+$('clearData').onclick=()=>{if(confirm('Permanently delete all locally stored photos and events? Export a backup first if needed.')){state={events:[],photos:[]};persist();render();toast('Local data cleared')}};
+window.addEventListener('online',updateNetwork);window.addEventListener('offline',updateNetwork);
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;$('installBtn').classList.remove('hidden')});
+$('installBtn').onclick=async()=>{if(deferredPrompt){deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null;$('installBtn').classList.add('hidden')}};
+if('serviceWorker'in navigator&&location.protocol!=='file:')navigator.serviceWorker.register('./sw.js').catch(()=>{});
+render();$('eventDate').value=new Date().toISOString().slice(0,10);
